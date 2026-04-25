@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Wheel of Fortune</title>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #ec4899;
+            --bg-color: #0f172a;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .container {
+            text-align: center;
+            z-index: 10;
+        }
+        .wheel-wrapper {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            margin: 20px auto;
+        }
+        .pointer {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 40px;
+            background: #ff0000;
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            z-index: 20;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+        }
+        canvas {
+            border-radius: 50%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5), 0 0 0 10px #334155;
+            transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1);
+        }
+        .controls {
+            background: rgba(30, 41, 59, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            margin-top: 20px;
+            width: 320px;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            border-radius: 8px;
+            padding: 10px;
+            border: none;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            background: #334155;
+            color: white;
+        }
+        button {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        #winner-display {
+            margin-top: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            height: 40px;
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎡 Lucky Wheel</h1>
+        
+        <div class="wheel-wrapper">
+            <div class="pointer"></div>
+            <canvas id="wheelCanvas" width="350" height="350"></canvas>
+        </div>
+        <div id="winner-display"></div>
+        <div class="controls">
+            <textarea id="itemsInput" placeholder="Enter names here... (one per line)">Apple&#10;Banana&#10;Cherry&#10;Date&#10;Eggplant</textarea>
+            <button id="spinBtn" onclick="spin()">SPIN THE WHEEL</button>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 10px;">The wheel updates as you type!</p>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const itemsInput = document.getElementById('itemsInput');
+        const spinBtn = document.getElementById('spinBtn');
+        const winnerDisplay = document.getElementById('winner-display');
+        let items = [];
+        let currentRotation = 0;
+        function drawWheel() {
+            items = itemsInput.value.split('\n').filter(i => i.trim() !== "");
+            if (items.length === 0) return;
+            const arcSize = (2 * Math.PI) / items.length;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            items.forEach((item, i) => {
+                const angle = i * arcSize;
+                ctx.beginPath();
+                ctx.fillStyle = `hsl(${(i * 360) / items.length}, 70%, 50%)`;
+                ctx.moveTo(175, 175);
+                ctx.arc(175, 175, 175, angle, angle + arcSize);
+                ctx.fill();
+                ctx.stroke();
+                ctx.save();
+                ctx.translate(175, 175);
+                ctx.rotate(angle + arcSize / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "white";
+                ctx.font = "bold 16px Arial";
+                ctx.fillText(item.substring(0, 12), 160, 10);
+                ctx.restore();
+            });
+        }
+        function spin() {
+            if (items.length < 2) {
+                alert("Please enter at least 2 items!");
+                return;
+            }
+            spinBtn.disabled = true;
+            winnerDisplay.innerText = "Spinning...";
+            const extraRotation = Math.floor(Math.random() * 360) + 3600; 
+            currentRotation += extraRotation;
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+            setTimeout(() => {
+                spinBtn.disabled = false;
+                const actualDeg = currentRotation % 360;
+                const arcSizeDeg = 360 / items.length;
+                const winningIndex = Math.floor((360 - actualDeg + 270) % 360 / arcSizeDeg);
+                
+                winnerDisplay.innerText = `🎉 Winner: ${items[winningIndex]}! 🎉`;
+            }, 4000);
+        }
+        itemsInput.addEventListener('input', drawWheel);
+        drawWheel();
+    </script>
+</body>
+</html>
